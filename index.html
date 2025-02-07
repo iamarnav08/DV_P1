@@ -1,261 +1,774 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pancake Charts</title>
-    <script src="https://d3js.org/d3.v6.min.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Olney Pancake Race</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            position: relative;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-x: hidden;
+      :root {
+        --pancake-golden: #ffc857;
+        --syrup-brown: #85520e;
+        --butter-yellow: #ffe5aa;
+        --cream: #fff6e9;
+        --strawberry: #ff6b6b;
+        --blueberry: #4a90e2;
+        --maple: #8b4513;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+
+      body {
+        background: var(--cream);
+        color: var(--syrup-brown);
+        line-height: 1.6;
+        background-image: radial-gradient(
+            circle at 20px 20px,
+            rgba(255, 200, 87, 0.1) 10px,
+            transparent 10px
+          ),
+          radial-gradient(
+            circle at 60px 60px,
+            rgba(255, 200, 87, 0.1) 10px,
+            transparent 10px
+          );
+        background-size: 80px 80px;
+      }
+
+      .header {
+        height: 100vh;
+        background: linear-gradient(
+            rgba(133, 82, 14, 0.7),
+            rgba(133, 82, 14, 0.7)
+          ),
+          url("/api/placeholder/1920/1080") center/cover;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        color: var(--cream);
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .pancake-border {
+        position: absolute;
+        width: 100%;
+        height: 100px;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 25% 50%,
+            var(--pancake-golden) 20px,
+            transparent 20px
+          ),
+          radial-gradient(
+            circle at 75% 50%,
+            var(--pancake-golden) 20px,
+            transparent 20px
+          );
+        background-size: 100px 100px;
+        animation: borderFlow 20s linear infinite;
+      }
+
+      @keyframes borderFlow {
+        from {
+          background-position: 0 0;
         }
 
-        /* Background wrapper with blur */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('a1.jpeg') center center fixed;
-            background-size: cover;
-            filter: blur(6.5px) brightness(0.9);
-            z-index: -1;
-            transform: scale(1.1); /* Prevent blur edges */
+        to {
+          background-position: 100px 0;
+        }
+      }
+
+      .header-content {
+        position: relative;
+        z-index: 1;
+        background: rgba(133, 82, 14, 0.8);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        border: 3px solid var(--pancake-golden);
+      }
+
+      .header h1 {
+        font-size: 4.5rem;
+        margin-bottom: 1rem;
+        text-shadow: 3px 3px 0 var(--syrup-brown);
+        color: var(--pancake-golden);
+        animation: bounceIn 1s ease forwards;
+      }
+
+      nav {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        background: rgba(255, 246, 233, 0.95);
+        padding: 1.2rem;
+        z-index: 1000;
+        box-shadow: 0 2px 20px rgba(133, 82, 14, 0.2);
+        backdrop-filter: blur(10px);
+      }
+
+      nav ul {
+        display: flex;
+        justify-content: center;
+        list-style: none;
+        gap: 3rem;
+      }
+
+      nav a {
+        color: var(--syrup-brown);
+        text-decoration: none;
+        font-weight: 600;
+        position: relative;
+        padding: 0.5rem;
+        transition: color 0.3s ease;
+      }
+
+      nav a::before {
+        content: "🥞";
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%) scale(0);
+        transition: transform 0.3s ease;
+      }
+
+      nav a:hover::before {
+        transform: translateX(-50%) scale(1);
+      }
+
+      .visualizations {
+        padding: 6rem 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        gap: 2.5rem;
+        padding: 2rem 0;
+      }
+
+      .card {
+        background: var(--cream);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(133, 82, 14, 0.1);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        border: 3px solid var(--pancake-golden);
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+          circle at center,
+          var(--butter-yellow),
+          transparent
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 1;
+      }
+
+      .card:hover {
+        transform: translateY(-15px) rotate(2deg);
+        box-shadow: 0 20px 40px rgba(133, 82, 14, 0.2);
+      }
+
+      .card:hover::before {
+        opacity: 0.5;
+      }
+
+      .card-image {
+        height: 220px;
+        background: var(--pancake-golden);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 3rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-image::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, var(--syrup-brown), transparent);
+        opacity: 0.3;
+      }
+
+      .syrup-drip {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 20px;
+        background: linear-gradient(
+          var(--syrup-brown) 0%,
+          var(--syrup-brown) 60%,
+          transparent 100%
+        );
+        clip-path: polygon(
+          0% 0%,
+          5% 100%,
+          10% 40%,
+          15% 100%,
+          20% 60%,
+          25% 100%,
+          30% 40%,
+          35% 100%,
+          40% 60%,
+          45% 100%,
+          50% 40%,
+          55% 100%,
+          60% 60%,
+          65% 100%,
+          70% 40%,
+          75% 100%,
+          80% 60%,
+          85% 100%,
+          90% 40%,
+          95% 100%,
+          100% 0%
+        );
+        opacity: 0.7;
+      }
+
+      .card-content {
+        padding: 2rem;
+        position: relative;
+        /* font-size: x-large; */
+        z-index: 2;
+        background: rgba(255, 246, 233, 0.9);
+      }
+
+      .card h3 {
+        margin-bottom: 1rem;
+        color: var(--syrup-brown);
+        font-size: 1.5rem;
+        position: relative;
+        padding-bottom: 0.5rem;
+      }
+
+      .card h3::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: var(--pancake-golden);
+        border-radius: 2px;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 1rem 2rem;
+        background: var(--syrup-brown);
+        color: var(--cream);
+        text-decoration: none;
+        border-radius: 30px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid var(--pancake-golden);
+      }
+
+      .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(133, 82, 14, 0.3);
+        background: var(--pancake-golden);
+        color: var(--syrup-brown);
+      }
+
+      @keyframes bounceIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.3);
         }
 
-        .chart-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: rgba(20, 20, 20, 0.92);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
-                        0 0 0 1px rgba(255, 255, 255, 0.15),
-                        inset 0 0 32px rgba(0, 0, 0, 0.2);
-            
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            z-index: 1;
+        50% {
+          opacity: 0.9;
+          transform: scale(1.1);
         }
 
-        .chart-container:hover {
-            transform: scale(1.01);
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6),
-                        0 0 0 1px rgba(255, 255, 255, 0.2),
-                        inset 0 0 32px rgba(0, 0, 0, 0.3);
+        80% {
+          opacity: 1;
+          transform: scale(0.9);
         }
 
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
 
-        .grid line {
-            stroke: rgba(255, 255, 255, 0.1);
-            stroke-width: 0.5px;
-            stroke-dasharray: 4 4;
+      /* Floating pancakes background animation */
+      .floating-pancakes {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .floating-pancake {
+        position: absolute;
+        font-size: 2rem;
+        animation: float 15s linear infinite;
+        opacity: 0.1;
+      }
+
+      @keyframes float {
+        0% {
+          transform: translate(-100%, -100%) rotate(0deg);
+          opacity: 0;
         }
 
-        .hover-line {
-            stroke: rgba(255, 165, 0, 0.8);
-            stroke-width: 2px;
-            stroke-dasharray: 4;
-            filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.5));
+        50% {
+          opacity: 0.1;
         }
 
-        .chart-label {
-            font-size: 14px;
-            font-weight: bold;
-            fill: #FFB366;
-            text-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
-            transition: fill 0.3s ease;
+        100% {
+          transform: translate(100vw, 100vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2.8rem;
         }
 
-        .chart-label:hover {
-            fill: #FFA500;
+        nav ul {
+          flex-direction: column;
+          text-align: center;
+          gap: 1rem;
         }
 
-        path {
-            filter: drop-shadow(0 0 3px rgba(255, 165, 0, 0.3));
-            transition: filter 0.3s ease;
+        .card {
+          margin: 1rem;
+        }
+      }
+
+      :root {
+        /* Combining both color palettes for richer options */
+        --pancake-brown: #f4d03f;
+        --pancake-golden: #ffc857;
+        --syrup: #c0392b;
+        --syrup-brown: #85520e;
+        --butter: #f1c40f;
+        --butter-yellow: #ffe5aa;
+        --plate: #ecf0f1;
+        --cream: #fff6e9;
+        --whipped-cream: #ffffff;
+      }
+
+      .hero {
+        height: 100vh;
+        background: linear-gradient(
+            rgba(244, 208, 63, 0.9),
+            rgba(192, 57, 43, 0.8)
+          ),
+          url("/api/placeholder/1920/1080") center/cover;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        color: var(--whipped-cream);
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 10px,
+          rgba(255, 255, 255, 0.1) 10px,
+          rgba(255, 255, 255, 0.1) 20px
+        );
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        padding: 2rem;
+        font-size: x-large;
+        animation: fadeInUp 1s ease forwards;
+      }
+
+      .hero h1 {
+        font-size: 4.5rem;
+        margin-bottom: 1rem;
+        text-shadow: 3px 3px 0px var(--syrup);
+        color: var(--whipped-cream);
+        animation: bounceIn 1s ease forwards;
+      }
+
+      .pancake-border {
+        position: absolute;
+        width: 100%;
+        height: 100px;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 25% 50%,
+            var(--pancake-golden) 20px,
+            transparent 20px
+          ),
+          radial-gradient(
+            circle at 75% 50%,
+            var(--pancake-golden) 20px,
+            transparent 20px
+          );
+        background-size: 100px 100px;
+        animation: borderFlow 20s linear infinite;
+      }
+
+      @keyframes borderFlow {
+        from {
+          background-position: 0 0;
         }
 
-        path:hover {
-            filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+        to {
+          background-position: 100px 0;
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
 
-        .axis text {
-            fill: #FFB366;
-            font-size: 12px;
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes bounceIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.3);
         }
 
-        .axis line, .axis path {
-            stroke: rgba(255, 165, 0, 0.3);
+        50% {
+          opacity: 0.9;
+          transform: scale(1.1);
         }
 
-        .pancake {
-            font-size: 24px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-            filter: drop-shadow(0 0 5px rgba(255, 165, 0, 0.3));
+        80% {
+          opacity: 1;
+          transform: scale(0.9);
         }
 
-        .pancake:hover {
-            /* transform: scale(1.3) rotate(10deg); */
-            filter: drop-shadow(0 0 10px rgba(255, 165, 0, 0.6));
+        100% {
+          opacity: 1;
+          transform: scale(1);
         }
+      }
 
-        .pancake.highlight {
-            /* transform: scale(1.5) rotate(-10deg); */
-            filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.8));
+      @media (max-width: 768px) {
+        .hero h1 {
+          font-size: 2.8rem;
         }
-
-       
-
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 165, 0, 0.1);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 165, 0, 0.3);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 165, 0, 0.5);
-        }
+      }
     </style>
-</head>
-<body>
-    <div class="chart-container"></div>
+  </head>
+
+  <body>
+    <div class="hero" id="home">
+      <div class="hero-content">
+        <h1>The Olney Pancake Race</h1>
+        <p>
+          A 550-year tradition of flipping pancakes in Olney, Buckinghamshire,
+          featuring women running a 415-yard race while flipping pancakes. Since
+          1950, this unique tradition has evolved into an international
+          competition with Liberal, Kansas, fostering goodwill between the two
+          towns
+        </p>
+      </div>
+    </div>
+    <div class="floating-pancakes">
+      <span class="floating-pancake" style="top: 10%; left: 20%">🥞</span>
+      <span class="floating-pancake" style="top: 30%; left: 80%">🥞</span>
+      <span class="floating-pancake" style="top: 70%; left: 40%">🥞</span>
+      <span class="floating-pancake" style="top: 50%; left: 60%">🥞</span>
+    </div>
+
+    <nav>
+      <ul>
+        <li><a href="#home">Home</a></li>
+        <li><a href="#visualizations">Visualizations</a></li>
+        <!-- <li><a href="#contact">Contact</a></li> -->
+      </ul>
+    </nav>
+
+    <!-- <header class="header" id="home">
+        <div class="header-content">
+            <h1>The Olney Pancake Race</h1>
+            <p>Flip, run, and celebrate in this delicious century-old tradition! Watch as local women race through the
+                historic streets of Olney, Buckinghamshire, flipping pancakes in a unique celebration of Shrove Tuesday.
+                Since 1950, we've shared this sweet tradition with Liberal, Kansas, creating an international
+                celebration of speed, skill, and the perfect pancake flip!</p>
+        </div>
+        <div class="pancake-border"></div>
+    </header> -->
+
+    <section class="visualizations" id="visualizations">
+      <div class="cards">
+        <div class="card" data-aos="fade-up">
+          <div class="card-image">
+            <div class="syrup-drip"></div>
+            🥞
+          </div>
+          <div class="card-content">
+            <h3>Town Victory Statistics</h3>
+            <p>
+              The visualization chronicles the competitive spirit between Olney
+              and Liberal through animated pancake stacks, where each layer
+              represents a victory. Since 1950, both towns have showcased their
+              pancake-flipping prowess, with the stacks growing higher as
+              victories accumulate. Interactive elements reveal the stories
+              behind each win, creating a delicious visual history of this
+              unique international rivalry.
+            </p>
+            <a href="stack.html" class="btn">Stack 'Em Up!</a>
+          </div>
+        </div>
+
+        <div class="card" data-aos="fade-up" data-aos-delay="100">
+          <div class="card-image">
+            <div class="syrup-drip"></div>
+            📊
+          </div>
+          <div class="card-content">
+            <h3>Merchandise Price Trends</h3>
+            <p>
+              Through an elegant arrangement of small multiples charts, this
+              visualization maps the journey of merchandise prices over time.
+              Each chart tells the story of a different item, with flowing lines
+              reminiscent of dripping syrup showing price movements. The faceted
+              design allows for easy comparison across items, revealing patterns
+              in pricing strategies and market trends.
+            </p>
+            <a href="facet_grid.html" class="btn">Check Prices</a>
+          </div>
+        </div>
+
+        <div class="card" data-aos="fade-up" data-aos-delay="200">
+          <div class="card-image">
+            <div class="syrup-drip"></div>
+            🕰️
+          </div>
+          <div class="card-content">
+            <h3>Race Day Schedule</h3>
+            <p>
+              The radial timeline transforms the day's events into a circular
+              story, with each moment carefully placed like ingredients in a
+              perfect pancake recipe. From the morning ceremonies to the final
+              celebrations, this visualization captures the flow of activities
+              throughout the race day, with interactive elements revealing the
+              rich details of each tradition and celebration.
+            </p>
+            <a href="clock.html" class="btn">Start the Clock</a>
+          </div>
+        </div>
+
+        <div class="card" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-image">
+            <div class="syrup-drip"></div>
+            📋
+          </div>
+          <div class="card-content">
+            <h3>Event Timeline</h3>
+            <p>
+              Through an innovative Gantt chart design, this visualization lays
+              out the day's events like layers in a stack of pancakes. Each
+              horizontal bar represents an activity, color-coded by category and
+              arranged chronologically. The interactive elements allow viewers
+              to explore event details, durations, and overlaps, creating a
+              comprehensive view of the race day's orchestration.
+            </p>
+            <a href="gantt.html" class="btn">Plan Your Day</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
     <script>
-        // [Previous JavaScript code remains exactly the same]
-        const data = [
-          { year: 2024, "Youth Long Sleeve Shirt": 18, "Youth Short Sleeve Shirt": 13, "Adult Long Sleeve Shirt": 23, "Adult Short Sleeve Shirt": 18 },
-          { year: 2023, "Youth Long Sleeve Shirt": 20, "Youth Short Sleeve Shirt": 15, "Adult Long Sleeve Shirt": 25, "Adult Short Sleeve Shirt": 20 },
-          { year: 2022, "Youth Long Sleeve Shirt": 10, "Youth Short Sleeve Shirt": 10, "Adult Long Sleeve Shirt": 10, "Adult Short Sleeve Shirt": 10 },
-          { year: 2020, "Youth Long Sleeve Shirt": 5, "Youth Short Sleeve Shirt": 5, "Adult Long Sleeve Shirt": 5, "Adult Short Sleeve Shirt": 5 },
-          { year: 2019, "Youth Long Sleeve Shirt": 5, "Youth Short Sleeve Shirt": 5, "Adult Long Sleeve Shirt": 5, "Adult Short Sleeve Shirt": 5 },
-          { year: 2018, "Youth Long Sleeve Shirt": 5, "Youth Short Sleeve Shirt": 5, "Adult Long Sleeve Shirt": 5, "Adult Short Sleeve Shirt": 5 }
-        ];
+      AOS.init({
+        duration: 1000,
+        once: true,
+        offset: 100,
+      });
 
-        const items = Object.keys(data[0]).slice(1);
-        const margin = { top: 40, right: 20, bottom: 40, left: 50 };
-        const width = 800 - margin.left - margin.right;
-        const height = 270 - margin.top - margin.bottom;
+      // Add floating pancakes dynamically
+      function createFloatingPancake() {
+        const pancake = document.createElement("span");
+        pancake.className = "floating-pancake";
+        pancake.textContent = "🥞";
+        pancake.style.left = Math.random() * 100 + "vw";
+        pancake.style.top = Math.random() * 100 + "vh";
+        pancake.style.animationDuration = 15 + Math.random() * 10 + "s";
+        document.querySelector(".floating-pancakes").appendChild(pancake);
 
-        const x = d3.scaleLinear()
-            .domain(d3.extent(data, d => d.year))
-            .range([0, width]);
+        pancake.addEventListener("animationend", () => {
+          pancake.remove();
+          createFloatingPancake();
+        });
+      }
 
-        const colors = d3.scaleOrdinal(d3.schemeCategory10);
-        const container = d3.select(".chart-container");
+      // Initialize floating pancakes
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => createFloatingPancake(), i * 3000);
+      }
 
-        const svg = container.append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", (height + margin.top + margin.bottom) * items.length + margin.bottom)
-            .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+      // Smooth scrolling
+      document.querySelectorAll("nav a").forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const section = document.querySelector(this.getAttribute("href"));
+          section.scrollIntoView({
+            behavior: "smooth",
+          });
+        });
+      });
 
-        const xAxis = d3.axisBottom(x).ticks(data.length).tickFormat(d3.format("d"));
+      // Enhanced navbar interaction with syrup effect
+      const nav = document.querySelector("nav");
+      let lastScroll = 0;
 
-        const hoverLine = svg.append("line")
-            .attr("class", "hover-line")
-            .attr("y1", 0)
-            .attr("y2", items.length * (height + margin.top))
-            .attr("opacity", 0);
+      window.addEventListener("scroll", () => {
+        const currentScroll = window.pageYOffset;
 
-        const allPancakes = [];
+        if (currentScroll <= 0) {
+          nav.style.background = "rgba(255, 246, 233, 0.95)";
+          nav.style.transform = "translateY(0)";
+          return;
+        }
 
-        items.forEach((item, i) => {
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d[item])])
-                .range([height, 0]);
+        if (currentScroll > lastScroll) {
+          nav.style.transform = "translateY(-100%)";
+        } else {
+          nav.style.transform = "translateY(0)";
+          nav.style.background = "rgba(255, 246, 233, 0.98)";
+        }
 
-            const chartGroup = svg.append("g")
-                .attr("transform", `translate(0,${i * (height + margin.top)})`);
+        lastScroll = currentScroll;
+      });
 
-            chartGroup.append("text")
-                .attr("x", width / 2)
-                .attr("y", -20)
-                .attr("text-anchor", "middle")
-                .attr("class", "chart-label")
-                .text(item);
+      // Add interactive card effects
+      document.querySelectorAll(".card").forEach((card) => {
+        card.addEventListener("mousemove", (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
 
-            chartGroup.append("g")
-                .attr("class", "axis")
-                .call(d3.axisLeft(y).ticks(5));
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
 
-            chartGroup.append("g")
-                .attr("class", "grid")
-                .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+          const angleX = (y - centerY) / 30;
+          const angleY = (centerX - x) / 30;
 
-            const line = d3.line()
-                .x(d => x(d.year))
-                .y(d => y(d[item]));
-
-            chartGroup.append("path")
-                .datum(data)
-                .attr("fill", "none")
-                .attr("stroke", colors(i))
-                .attr("stroke-width", 2)
-                .attr("d", line);
-
-            const pancakes = chartGroup.selectAll(".pancake")
-                .data(data)
-                .enter()
-                .append("text")
-                .attr("class", "pancake")
-                .attr("data-year", d => d.year)
-                .attr("x", d => x(d.year))
-                .attr("y", d => y(d[item]))
-                .attr("text-anchor", "middle")
-                .attr("dominant-baseline", "middle")
-                .text("🥞")
-                // .style("animation", (d, i) => `float 3s ease-in-out ${i * 0.2}s infinite`);  
-
-            allPancakes.push(pancakes);
+          card.style.transform = `perspective(1000px) rotateX(${angleX}deg) rotateY(${angleY}deg) translateY(-15px)`;
         });
 
-        svg.append("g")
-            .attr("class", "axis")
-            .attr("transform", `translate(0,${items.length * (height + margin.top)})`)
-            .call(xAxis);
+        card.addEventListener("mouseleave", () => {
+          card.style.transform = "translateY(0) rotateX(0) rotateY(0)";
+        });
+      });
 
-        svg.append("rect")
-            .attr("width", width)
-            .attr("height", items.length * (height + margin.top))
-            .attr("fill", "transparent")
-            .on("mousemove", function(event) {
-                const mouseX = d3.pointer(event, this)[0];
-                const closestYear = Math.round(x.invert(mouseX));
+      // Add syrup drip animation
+      const syrupDrips = document.querySelectorAll(".syrup-drip");
+      syrupDrips.forEach((drip) => {
+        setInterval(() => {
+          drip.style.opacity = "0.7";
+          setTimeout(() => {
+            drip.style.opacity = "0.3";
+          }, 500);
+        }, 2000);
+      });
 
-                allPancakes.forEach(pancakes => {
-                    pancakes.classed("highlight", d => d.year === closestYear);
-                });
+      // Add pancake flip animation on hover
+      document.querySelectorAll(".card-image").forEach((image) => {
+        image.addEventListener("mouseenter", () => {
+          image.style.transform = "rotateX(180deg)";
+          setTimeout(() => {
+            image.style.transform = "rotateX(0)";
+          }, 500);
+        });
+      });
 
-                hoverLine.attr("x1", x(closestYear))
-                    .attr("x2", x(closestYear))
-                    .attr("opacity", 1);
-            })
-            .on("mouseleave", function() {
-                allPancakes.forEach(pancakes => pancakes.classed("highlight", false));
-                hoverLine.attr("opacity", 0);
-            });
+      // Add butter melting effect on cards
+      document.querySelectorAll(".card").forEach((card) => {
+        const butter = document.createElement("div");
+        butter.className = "butter-effect";
+        butter.style.cssText = `
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 40px;
+                height: 40px;
+                background: var(--butter-yellow);
+                border-radius: 5px;
+                opacity: 0;
+                transition: all 0.5s ease;
+            `;
+
+        card.appendChild(butter);
+
+        card.addEventListener("mouseenter", () => {
+          butter.style.opacity = "1";
+          butter.style.top = "10px";
+          butter.style.width = "60px";
+          butter.style.height = "10px";
+          butter.style.borderRadius = "2px";
+        });
+
+        card.addEventListener("mouseleave", () => {
+          butter.style.opacity = "0";
+          butter.style.top = "-20px";
+          butter.style.width = "40px";
+          butter.style.height = "40px";
+          butter.style.borderRadius = "5px";
+        });
+      });
     </script>
-</body>
+  </body>
 </html>
