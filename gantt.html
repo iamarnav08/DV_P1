@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olney Pancake Race Event Scheduler</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            background: linear-gradient(rgba(80, 80, 80, 0.5), rgba(255, 255, 255, 0.5)),
+                url('a1.jpeg');
+            background-size: fill;
+            height: 100vh;
+        }
+
+        body {
+            zoom: 85%;
+            font-family: 'Poppins', sans-serif;
+            background-size: fill;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgb(238, 238, 238);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            padding: 45px;
+            width: 90%;
+            max-width: 100vw;
+            height: 100%;
+            transition: all 0.5s ease;
+        }
+
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+            background-color: #f0f4f8;
+            padding: 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        select,
+        input {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        #gantt-chart {
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 250px;
+            z-index: 100;
+        }
+
+        #legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 10px;
+            margin-right: 5px;
+            border-radius: 3px;
+        }
+
+        .time-slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-circles {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .time-circle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #f8fafc;
+            padding: 4px 8px;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .time-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #334155;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .time-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .time-btn {
+            border: none;
+            background: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0;
+            font-size: 10px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .time-btn:hover {
+            color: #3b82f6;
+        }
+
+        .time-separator {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .quick-select {
+            display: flex;
+            gap: 4px;
+        }
+
+        .quick-btn {
+            border: none;
+            background: #f1f5f9;
+            color: #475569;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div id="controls">
+            <div class="filter-group">
+                <label>Time Range:</label>
+                <div class="time-slider-container">
+                    <div class="time-circles">
+                        <div class="time-circle start">
+                            <span class="time-value">08:00</span>
+                            <div class="time-controls">
+                                <button class="time-btn" onclick="adjustTime('start', 'up')">▲</button>
+                                <button class="time-btn" onclick="adjustTime('start', 'down')">▼</button>
+                            </div>
+                        </div>
+                        <span class="time-separator">to</span>
+                        <div class="time-circle end">
+                            <span class="time-value">19:00</span>
+                            <div class="time-controls">
+                                <button class="time-btn" onclick="adjustTime('end', 'up')">▲</button>
+                                <button class="time-btn" onclick="adjustTime('end', 'down')">▼</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Quick select buttons -->
+                    <div class="quick-select">
+                        <button onclick="setTimeRange('morning')" class="quick-btn">🌅 AM</button>
+                        <button onclick="setTimeRange('afternoon')" class="quick-btn">☀️ PM</button>
+                        <button onclick="setTimeRange('full')" class="quick-btn">📅 All</button>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>Group By:</label>
+                <select id="group-select">
+                    <option value="section">Section</option>
+                    <option value="type">Type</option>
+                    <option value="none">None</option>
+                </select>
+            </div>
+        </div>
+        <div id="gantt-chart"></div>
+        <div id="legend"></div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+        const events = [
+            {
+                section: "Breakfast & Market",
+                events: [
+                    { name: "Pancake Breakfast", start: "08:00", end: "09:30", color: "#FF6B6B", type: "Food" },
+                    { name: "Market Stalls & Hot Pancakes", start: "09:00", end: "13:00", color: "#4ECDC4", type: "Market" },
+                    { name: "Church Hall Pancakes", start: "10:00", end: "13:00", color: "#45B7D1", type: "Food" }
+                ]
+            },
+            {
+                section: "Entertainment",
+                events: [
+                    { name: "Children's Entertainment", start: "10:00", end: "13:00", color: "#FDCB6E", type: "Performance" },
+                    { name: "Children's Races", start: "10:00", end: "13:00", color: "#6C5CE7", type: "Sports" },
+                    { name: "Cookery Demonstration", start: "10:45", end: "11:30", color: "#FF8A5B", type: "Food" }
+                ]
+            },
+            {
+                section: "Race Events",
+                events: [
+                    { name: "Race Registration", start: "11:00", end: "11:45", color: "#2ECC71", type: "Sports" },
+                    { name: "Olney Pancake Race", start: "11:55", end: "12:00", color: "#E74C3C", type: "Sports" },
+                    { name: "Race Finish", start: "12:00", end: "12:15", color: "#27AE60", type: "Sports" }
+                ]
+            },
+            {
+                section: "Church Events",
+                events: [
+                    { name: "Shriving Service", start: "12:15", end: "18:45", color: "#9B59B6", type: "Ceremony" },
+                    { name: "Live Web Link & Prizes", start: "18:45", end: "19:00", color: "#3498DB", type: "Ceremony" }
+                ]
+            }
+        ];
+
+        function renderGanttChart(startTime, endTime, groupBy) {
+            d3.select("#gantt-chart").html("");
+            d3.select("#legend").html("");
+
+            const margin = { top: 60, right: 50, bottom: 30, left: 200 };
+            const width = 1280 - margin.left - margin.right;
+            const height = 450 - margin.top - margin.bottom;
+
+            const svg = d3.select("#gantt-chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const parseTime = d3.timeParse("%H:%M");
+            const formatTime = d3.timeFormat("%I:%M %p");
+
+            const x = d3.scaleTime()
+                .domain([parseTime(startTime), parseTime(endTime)])
+                .range([0, width]);
+
+            svg.append("g")
+                // .attr("transform", `translate(0,${height})`)
+                // .call(
+                //     d3.axisBottom(x)
+                //         .ticks(d3.timeHour.every(1))
+                //         .tickFormat(d => formatTime(d))
+                // );
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${height})`)
+                .call(
+                    d3.axisBottom(x)
+                        .tickSize(-height) // Extends tick lines across the chart
+                        .tickFormat("") // Hide tick labels for the grid
+                        .ticks(d3.timeHour.every(1))
+                        .tickFormat(d => formatTime(d))
+                )
+                .selectAll("line")
+                .attr("stroke", "#555") // Dark gray color for gridlines
+                .attr("stroke-dasharray", "3,3");
+
+            const tooltip = d3.select("#tooltip");
+            const legend = d3.select("#legend");
+
+            let yOffset = 0;
+            const processedEvents = groupBy === 'section' ? events :
+                groupBy === 'type' ? groupEventsByType() : flattenEvents();
+
+            processedEvents.forEach(section => {
+
+                svg.append("text")
+                    .attr("x", -180)
+                    .attr("y", yOffset + 25)
+                    .text(section.name || section.section)
+                    .attr("fill", "#333")
+                    .attr("font-weight", "bold");
+
+                svg.append("line")
+                    .attr("x1", 0)
+                    .attr("x2", width)
+                    .attr("y1", yOffset + 0)  // Slightly below the last event in the section
+                    .attr("y2", yOffset + 0)
+                    .attr("stroke", "#aaa")  // Light gray color
+                    .attr("stroke-width", 1)
+                    .attr("stroke-dasharray", "4,4");
+
+                section.events.forEach(event => {
+                    const startTime = parseTime(event.start);
+                    const endTime = parseTime(event.end);
+                    const eventBar = svg.append("rect")
+                        .attr("x", Math.max(0, x(startTime)))
+                        .attr("y", yOffset)
+                        .attr("width", Math.min(width, x(endTime)) - Math.max(0, x(startTime)))
+                        .attr("height", 20)
+                        .attr("fill", event.color)
+                        .attr("rx", 5);
+
+                    eventBar
+                        .on("mouseover", function (polo, d) {
+                            d3.select(this)
+                                .attr("opacity", 0.7);
+
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", 0.9);
+
+                            tooltip.html(`
+                                <strong>${event.name}</strong><br>
+                                Starts: ${event.start}<br>
+                                Ends: ${event.end}
+                            `)
+                        })
+                        .on("mouseout", function () {
+                            d3.select(this)
+                                .attr("opacity", 1);
+
+                            tooltip.transition()
+                                .duration(500)
+                                .style("opacity", 0);
+                        });
+
+                    svg.append("text")
+                        .attr("x", x(startTime) + 10)
+                        .attr("y", yOffset + 10)
+                        .attr("fill", "white")
+                        .attr("font-size", "12px");
+
+                    // Legend
+                    legend.append("div")
+                        .attr("class", "legend-item")
+                        .html(`
+                            <div class="legend-color" style="background-color: ${event.color}"></div>
+                            ${event.name}
+                        `);
+
+                    yOffset += 30;
+                });
+
+                yOffset += 10;
+            });
+        }
+
+        // Utility functions for grouping
+        function groupEventsByType() {
+            const typeGroups = {};
+            events.forEach(section => {
+                section.events.forEach(event => {
+                    if (!typeGroups[event.type]) {
+                        typeGroups[event.type] = {
+                            name: event.type,
+                            events: []
+                        };
+                    }
+                    typeGroups[event.type].events.push(event);
+                });
+            });
+            return Object.values(typeGroups);
+        }
+
+        function flattenEvents() {
+            const allEvents = [];
+            events.forEach(section => {
+                allEvents.push(...section.events);
+            });
+            return [{ name: 'All Events', events: allEvents }];
+        }
+
+        // Initial render
+        renderGanttChart("08:00", "19:00", "section");
+
+        // Event listeners for controls
+        d3.select("#start-time").on("change", function () {
+            if (d3.select("#start-time-checkbox").property("checked")) {
+                renderGanttChart(
+                    this.value,
+                    d3.select("#end-time").node().value,
+                    d3.select("#group-select").node().value
+                );
+            }
+        });
+
+        d3.select("#end-time").on("change", function () {
+            if (d3.select("#end-time-checkbox").property("checked")) {
+                renderGanttChart(
+                    d3.select("#start-time").node().value,
+                    this.value,
+                    d3.select("#group-select").node().value
+                );
+            }
+        });
+
+        d3.select("#group-select").on("change", function () {
+            const startTime = document.querySelector('.time-circle.start .time-value').textContent;
+            const endTime = document.querySelector('.time-circle.end .time-value').textContent;
+            renderGanttChart(
+                startTime,
+                endTime,
+                this.value
+            );
+        });
+
+
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('mouseover', function () {
+                this.style.transform = 'scale(1.05)';
+            });
+            btn.addEventListener('mouseout', function () {
+                this.style.transform = 'scale(1)';
+            });
+        });
+
+        function adjustTime(type, direction) {
+            const timeElement = document.querySelector(`.time-circle.${type} .time-value`);
+            let [hours, minutes] = timeElement.textContent.split(':').map(Number);
+
+            if (direction === 'up') {
+                hours = (hours + 1) % 24;
+            } else {
+                hours = (hours - 1 + 24) % 24;
+            }
+
+            // Ensure hours stay within 8-19 range
+            if (type === 'start') {
+                hours = Math.max(8, Math.min(hours, 18));
+            } else {
+                hours = Math.max(9, Math.min(hours, 19));
+            }
+
+            timeElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            updateGanttChart();
+        }
+
+        function setTimeRange(period) {
+            const startElement = document.querySelector('.time-circle.start .time-value');
+            const endElement = document.querySelector('.time-circle.end .time-value');
+
+            switch (period) {
+                case 'morning':
+                    startElement.textContent = '08:00';
+                    endElement.textContent = '12:00';
+                    break;
+                case 'afternoon':
+                    startElement.textContent = '12:00';
+                    endElement.textContent = '17:00';
+                    break;
+                case 'full':
+                    startElement.textContent = '08:00';
+                    endElement.textContent = '19:00';
+                    break;
+            }
+            updateGanttChart();
+        }
+
+        function updateGanttChart() {
+            const startTime = document.querySelector('.time-circle.start .time-value').textContent;
+            const endTime = document.querySelector('.time-circle.end .time-value').textContent;
+            console.log(startTime, endTime);
+            renderGanttChart(startTime, endTime, d3.select("#group-select").node().value);
+        }
+    </script>
+</body>
+
+</html>

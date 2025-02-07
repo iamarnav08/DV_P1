@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pancake Charts</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            position: relative;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Background wrapper with blur */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('a1.jpeg') center center fixed;
+            background-size: cover;
+            filter: blur(6.5px) brightness(0.9);
+            z-index: -1;
+            transform: scale(1.1); /* Prevent blur edges */
+        }
+
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.92);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+                        0 0 0 1px rgba(255, 255, 255, 0.15),
+                        inset 0 0 32px rgba(0, 0, 0, 0.2);
+            
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chart-container:hover {
+            transform: scale(1.01);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6),
+                        0 0 0 1px rgba(255, 255, 255, 0.2),
+                        inset 0 0 32px rgba(0, 0, 0, 0.3);
+        }
+
+
+        .grid line {
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 0.5px;
+            stroke-dasharray: 4 4;
+        }
+
+        .hover-line {
+            stroke: rgba(255, 165, 0, 0.8);
+            stroke-width: 2px;
+            stroke-dasharray: 4;
+            filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.5));
+        }
+
+        .chart-label {
+            font-size: 14px;
+            font-weight: bold;
+            fill: #FFB366;
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
+            transition: fill 0.3s ease;
+        }
+
+        .chart-label:hover {
+            fill: #FFA500;
+        }
+
+        path {
+            filter: drop-shadow(0 0 3px rgba(255, 165, 0, 0.3));
+            transition: filter 0.3s ease;
+        }
+
+        path:hover {
+            filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+        }
+
+        .axis text {
+            fill: #FFB366;
+            font-size: 12px;
+        }
+
+        .axis line, .axis path {
+            stroke: rgba(255, 165, 0, 0.3);
+        }
+
+        .pancake {
+            font-size: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+            filter: drop-shadow(0 0 5px rgba(255, 165, 0, 0.3));
+        }
+
+        .pancake:hover {
+            /* transform: scale(1.3) rotate(10deg); */
+            filter: drop-shadow(0 0 10px rgba(255, 165, 0, 0.6));
+        }
+
+        .pancake.highlight {
+            /* transform: scale(1.5) rotate(-10deg); */
+            filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.8));
+        }
+
+       
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 165, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 165, 0, 0.3);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 165, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container"></div>
+    <script>
+        // [Previous JavaScript code remains exactly the same]
+        const data = [
+          { year: 2024, "Youth Long Sleeve Shirt": 18, "Youth Short Sleeve Shirt": 13, "Adult Long Sleeve Shirt": 23, "Adult Short Sleeve Shirt": 18 },
+          { year: 2023, "Youth Long Sleeve Shirt": 20, "Youth Short Sleeve Shirt": 15, "Adult Long Sleeve Shirt": 25, "Adult Short Sleeve Shirt": 20 },
+          { year: 2022, "Youth Long Sleeve Shirt": 10, "Youth Short Sleeve Shirt": 10, "Adult Long Sleeve Shirt": 10, "Adult Short Sleeve Shirt": 10 },
+          { year: 2020, "Youth Long Sleeve Shirt": 5, "Youth Short Sleeve Shirt": 5, "Adult Long Sleeve Shirt": 5, "Adult Short Sleeve Shirt": 5 },
+          { year: 2019, "Youth Long Sleeve Shirt": 5, "Youth Short Sleeve Shirt": 5, "Adult Long Sleeve Shirt": 5, "Adult Short Sleeve Shirt": 5 },
+          { year: 2018, "Youth Long Sleeve Shirt": 5, "Youth Short Sleeve Shirt": 5, "Adult Long Sleeve Shirt": 5, "Adult Short Sleeve Shirt": 5 }
+        ];
+
+        const items = Object.keys(data[0]).slice(1);
+        const margin = { top: 40, right: 20, bottom: 40, left: 50 };
+        const width = 800 - margin.left - margin.right;
+        const height = 270 - margin.top - margin.bottom;
+
+        const x = d3.scaleLinear()
+            .domain(d3.extent(data, d => d.year))
+            .range([0, width]);
+
+        const colors = d3.scaleOrdinal(d3.schemeCategory10);
+        const container = d3.select(".chart-container");
+
+        const svg = container.append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", (height + margin.top + margin.bottom) * items.length + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const xAxis = d3.axisBottom(x).ticks(data.length).tickFormat(d3.format("d"));
+
+        const hoverLine = svg.append("line")
+            .attr("class", "hover-line")
+            .attr("y1", 0)
+            .attr("y2", items.length * (height + margin.top))
+            .attr("opacity", 0);
+
+        const allPancakes = [];
+
+        items.forEach((item, i) => {
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d[item])])
+                .range([height, 0]);
+
+            const chartGroup = svg.append("g")
+                .attr("transform", `translate(0,${i * (height + margin.top)})`);
+
+            chartGroup.append("text")
+                .attr("x", width / 2)
+                .attr("y", -20)
+                .attr("text-anchor", "middle")
+                .attr("class", "chart-label")
+                .text(item);
+
+            chartGroup.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y).ticks(5));
+
+            chartGroup.append("g")
+                .attr("class", "grid")
+                .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+
+            const line = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d[item]));
+
+            chartGroup.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", colors(i))
+                .attr("stroke-width", 2)
+                .attr("d", line);
+
+            const pancakes = chartGroup.selectAll(".pancake")
+                .data(data)
+                .enter()
+                .append("text")
+                .attr("class", "pancake")
+                .attr("data-year", d => d.year)
+                .attr("x", d => x(d.year))
+                .attr("y", d => y(d[item]))
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "middle")
+                .text("🥞")
+                // .style("animation", (d, i) => `float 3s ease-in-out ${i * 0.2}s infinite`);  
+
+            allPancakes.push(pancakes);
+        });
+
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${items.length * (height + margin.top)})`)
+            .call(xAxis);
+
+        svg.append("rect")
+            .attr("width", width)
+            .attr("height", items.length * (height + margin.top))
+            .attr("fill", "transparent")
+            .on("mousemove", function(event) {
+                const mouseX = d3.pointer(event, this)[0];
+                const closestYear = Math.round(x.invert(mouseX));
+
+                allPancakes.forEach(pancakes => {
+                    pancakes.classed("highlight", d => d.year === closestYear);
+                });
+
+                hoverLine.attr("x1", x(closestYear))
+                    .attr("x2", x(closestYear))
+                    .attr("opacity", 1);
+            })
+            .on("mouseleave", function() {
+                allPancakes.forEach(pancakes => pancakes.classed("highlight", false));
+                hoverLine.attr("opacity", 0);
+            });
+    </script>
+</body>
+</html>
