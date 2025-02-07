@@ -168,7 +168,7 @@ d3.csv("data.csv").then(data => {
         // Flash the year in the middle of the graph
         svg.append("text")
           .attr("id", "flashYear")
-          .attr("x", width / 2)
+          .attr("x", width / 1.925)
           .attr("y", height / 2)
           .attr("text-anchor", "middle")
           .attr("font-size", "40px")
