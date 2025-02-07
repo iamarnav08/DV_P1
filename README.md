@@ -17,5 +17,4 @@ Below the introduction, we have links to the four visualisations we have used an
 
 To navigate between the visualisations and teh dashboard, simply use the back and forth buttons given by the browser itself.
 
-###
-Have fun! Hope you like our work!
+### Have fun! Hope you like our work!
